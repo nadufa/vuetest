@@ -24,6 +24,7 @@
         :page="page"
         :pageCount="pageCount"
         :drawerOpen="statusDrawer"
+        :loading="isLoading"
         @refresh="refreshData"
         @open-drawer="openDrawer"
         @delete="deleteSelected"
@@ -81,7 +82,7 @@ export default {
     page: 1,
   }),
   computed: {
-    ...mapGetters(["tableData", "selectedUser", "editMode"]),
+    ...mapGetters(["tableData", "selectedUser", "editMode", "isLoading"]),
     currentStatus() {
       return this.selectedStatus === 0
         ? undefined

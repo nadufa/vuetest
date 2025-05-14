@@ -10,6 +10,7 @@ export default new Vuex.Store({
     totalCount: 0,
     selectedUser: null,
     editMode: false,
+    isLoading: false,
   },
   mutations: {
     setTableData(state, data) {
@@ -24,16 +25,19 @@ export default new Vuex.Store({
     setEditMode(state, value) {
       state.editMode = value;
     },
+    setLoading(state, value) {
+      state.isLoading = value;
+    },
   },
   actions: {
     async fetchTableData({ commit }, params = {}) {
       try {
+        commit("setLoading", true);
         const response = await api.fetchAll(params);
         commit("setTableData", response.data);
 
         let total;
         const totalHeader = response.headers["x-total-count"];
-
         if (totalHeader && !isNaN(parseInt(totalHeader, 10))) {
           total = parseInt(totalHeader, 10);
         } else {
@@ -44,6 +48,8 @@ export default new Vuex.Store({
         commit("setTotalCount", total);
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error);
+      } finally {
+        commit("setLoading", false);
       }
     },
     async createRecord({ dispatch }, payload) {
@@ -73,5 +79,6 @@ export default new Vuex.Store({
     totalCount: (state) => state.totalCount,
     selectedUser: (state) => state.selectedUser,
     editMode: (state) => state.editMode,
+    isLoading: (state) => state.isLoading,
   },
 });

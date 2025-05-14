@@ -38,7 +38,18 @@
         </v-col>
       </v-row>
 
+      <!-- Добавляем индикатор загрузки -->
+      <v-row v-if="loading" justify="center" class="my-4">
+        <v-progress-circular
+          indeterminate
+          color="primary"
+          size="64"
+          width="6"
+        ></v-progress-circular>
+      </v-row>
+
       <v-data-table
+        v-if="!loading"
         :headers="headers"
         :items="items"
         :items-per-page="localItemsPerPage"
@@ -134,6 +145,9 @@ export default {
         width: this.drawerOpen ? "calc(100vw - 250px)" : "100vw",
       };
     },
+    loading() {
+      return this.$store.getters.loading;
+    },
   },
   methods: {
     updateItemsPerPage(val) {
@@ -155,8 +169,6 @@ export default {
       this.$emit("select-user", item);
     },
     getItemClass(item) {
-      console.table(item.id, this.selectedUser?.id);
-
       return this.selectedUser && item.id === this.selectedUser.id
         ? "selected-row"
         : "";
