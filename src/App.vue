@@ -81,10 +81,7 @@ export default {
     page: 1,
   }),
   computed: {
-    ...mapGetters(["tableData", "selectedUser"]),
-    pageCount() {
-      return Math.ceil(this.tableData.length / this.itemsPerPage);
-    },
+    ...mapGetters(["tableData", "selectedUser", "editMode"]),
     currentStatus() {
       return this.selectedStatus === 0
         ? undefined
@@ -92,9 +89,21 @@ export default {
         ? "processed"
         : "unprocessed";
     },
+    isEditMode() {
+      return this.$store.getters.editMode;
+    },
+    pageCount() {
+      return Math.ceil(this.$store.getters.totalCount / this.itemsPerPage);
+    },
   },
   methods: {
-    ...mapActions(["fetchTableData", "setSelectedUser"]),
+    ...mapActions([
+      "fetchTableData",
+      "setSelectedUser",
+      "updateRecord",
+      "createRecord",
+      "setEditMode",
+    ]),
 
     toggleStatusDrawer() {
       this.statusDrawer = !this.statusDrawer;
@@ -116,13 +125,30 @@ export default {
       };
     },
 
-    applyFilters() {
-      this.fetchTableData({
-        _page: this.page,
-        _limit: this.itemsPerPage,
-        ...this.cleanForm(),
-        status: this.currentStatus,
-      });
+    async applyFilters() {
+      if (this.editMode) {
+        try {
+          await this.updateRecord({ id: this.form.id, data: this.form });
+          this.$toast?.success("Пользователь обновлён");
+        } catch (e) {
+          console.error("Ошибка при обновлении:", e);
+          this.$toast?.error("Ошибка при обновлении пользователя");
+        }
+      } else {
+        try {
+          await this.createRecord(this.form);
+          this.$toast?.success("Пользователь добавлен");
+        } catch (e) {
+          console.error("Ошибка при добавлении:", e);
+          this.$toast?.error("Ошибка при добавлении пользователя");
+        }
+      }
+
+      this.actionsDrawer = false;
+      this.setSelectedUser(null);
+      this.setEditMode(false);
+      this.resetForm();
+      this.refreshData();
     },
 
     refreshData() {
@@ -138,17 +164,35 @@ export default {
     openDrawer(mode) {
       if (mode === "edit" && this.selectedUser) {
         this.form = { ...this.selectedUser };
+        this.setEditMode(true);
       } else {
         this.resetForm();
+        this.setEditMode(false);
       }
       this.actionsDrawer = true;
     },
+
     onSelectUser(user) {
       this.setSelectedUser(user);
     },
 
-    deleteSelected() {
-      console.log("Удаление выбранных записей");
+    async deleteSelected() {
+      if (!this.selectedUser || !this.selectedUser.id) {
+        this.$toast?.error("Пользователь не выбран");
+        return;
+      }
+
+      const confirmed = confirm(
+        `Удалить пользователя ${this.selectedUser.firstName} ${this.selectedUser.lastName}?`
+      );
+      if (!confirmed) return;
+
+      try {
+        await this.$store.dispatch("deleteRecord", this.selectedUser.id);
+        this.setSelectedUser(null);
+      } catch (error) {
+        console.error("Ошибка при удалении пользователя:", error);
+      }
     },
 
     cleanForm() {
