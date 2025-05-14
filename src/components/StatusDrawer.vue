@@ -17,12 +17,12 @@
       </v-list-item>
 
       <v-list-item-group
-        v-model="internalModel"
+        v-model="internalSelectedStatus"
         mandatory
         color="indigo"
-        @change="onModelChange"
+        @change="onStatusChange"
       >
-        <v-list-item v-for="(item, i) in items" :key="i">
+        <v-list-item v-for="(item, i) in statusData" :key="i">
           <v-list-item-icon>
             <v-icon v-text="item.icon"></v-icon>
           </v-list-item-icon>
@@ -43,11 +43,11 @@ export default {
       type: Boolean,
       required: true,
     },
-    model: {
+    selectedStatus: {
       type: Number,
       required: true,
     },
-    items: {
+    statusData: {
       type: Array,
       required: true,
     },
@@ -61,18 +61,18 @@ export default {
         this.$emit("input", val);
       },
     },
-    internalModel: {
+    internalSelectedStatus: {
       get() {
-        return this.model;
+        return this.selectedStatus;
       },
       set(val) {
-        this.$emit("update:model", val);
+        this.$emit("update:selectedStatus", val);
       },
     },
   },
   methods: {
-    onModelChange(val) {
-      this.$emit("update:model", val);
+    onStatusChange(val) {
+      this.$emit("update:selectedStatus", val);
     },
   },
 };

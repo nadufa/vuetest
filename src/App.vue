@@ -1,10 +1,13 @@
 <template>
   <v-app>
-    <app-top-bar @toggle-status-drawer="toggleStatusDrawer" />
+    <AppTopBar @toggle-status-drawer="toggleStatusDrawer" />
+    <StatusDrawer
+      v-model="statusDrawer"
+      :statusData="statusData"
+      :selectedStatus.sync="selectedStatus"
+    />
 
-    <status-drawer v-model="statusDrawer" :items="items" :model.sync="model" />
-
-    <actions-drawer
+    <ActionsDrawer
       :value.sync="actionsDrawer"
       :form.sync="form"
       @reset="resetForm"
@@ -13,9 +16,10 @@
 
     <v-main>
       <MainContent
-        :title="items[model].text"
+        :title="statusData[selectedStatus].text"
         :headers="headers"
         :items="tableData"
+        :selectedUser="selectedUser"
         :itemsPerPage="itemsPerPage"
         :page="page"
         :pageCount="pageCount"
@@ -25,6 +29,7 @@
         @delete="deleteSelected"
         @update:itemsPerPage="itemsPerPage = $event"
         @update:page="page = $event"
+        @select-user="onSelectUser"
       />
     </v-main>
   </v-app>
@@ -35,6 +40,7 @@ import ActionsDrawer from "@/components/ActionsDrawer.vue";
 import AppTopBar from "@/components/AppTopBar.vue";
 import MainContent from "@/components/MainContent.vue";
 import StatusDrawer from "@/components/StatusDrawer.vue";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
   name: "App",
@@ -47,8 +53,8 @@ export default {
   data: () => ({
     statusDrawer: true,
     actionsDrawer: false,
-    model: 0,
-    items: [
+    selectedStatus: 0,
+    statusData: [
       { icon: "mdi-view-list", text: "Все" },
       { icon: "mdi-check-circle-outline", text: "Обработанные" },
       { icon: "mdi-alert-circle-outline", text: "Не обработанные" },
@@ -71,53 +77,33 @@ export default {
       { text: "E-mail", value: "email" },
       { text: "Интересы", value: "interests" },
     ],
-    tableData: [
-      {
-        id: 3,
-        job: "COO",
-        email: "hmacquire3y@fema.gov",
-        phone: "(555) 758-4014",
-        company: "Twitter",
-        lastName: "Berryann",
-        firstName: "Johannah",
-        interests: "Computer programming",
-      },
-      {
-        id: 4,
-        job: "Project Manager",
-        email: "gblanchflower3u@nasa.gov",
-        phone: "(555) 292-5353",
-        company: "Home Depot",
-        lastName: "Guerre",
-        firstName: "Hunterrrr",
-        interests: "Cycling",
-      },
-      {
-        id: 5,
-        job: "Engineering Manager",
-        email: "tbanger23@sbwire.com",
-        phone: "(555) 896-4164",
-        company: "Ford Motor",
-        lastName: "Gristock",
-        firstName: "Ellwood",
-        interests: "Board games",
-      },
-    ],
     itemsPerPage: 10,
     page: 1,
   }),
   computed: {
+    ...mapGetters(["tableData", "selectedUser"]),
     pageCount() {
       return Math.ceil(this.tableData.length / this.itemsPerPage);
     },
+    currentStatus() {
+      return this.selectedStatus === 0
+        ? undefined
+        : this.selectedStatus === 1
+        ? "processed"
+        : "unprocessed";
+    },
   },
   methods: {
+    ...mapActions(["fetchTableData", "setSelectedUser"]),
+
     toggleStatusDrawer() {
       this.statusDrawer = !this.statusDrawer;
     },
+
     toggleActionsDrawer() {
       this.actionsDrawer = !this.actionsDrawer;
     },
+
     resetForm() {
       this.form = {
         firstName: "",
@@ -129,19 +115,68 @@ export default {
         interests: "",
       };
     },
+
     applyFilters() {
-      console.log("Применяем фильтры:", this.form);
+      this.fetchTableData({
+        _page: this.page,
+        _limit: this.itemsPerPage,
+        ...this.cleanForm(),
+        status: this.currentStatus,
+      });
     },
+
     refreshData() {
-      console.log("Обновление данных...");
+      console.log(this.currentStatus);
+
+      this.fetchTableData({
+        _page: this.page,
+        _limit: this.itemsPerPage,
+        status: this.currentStatus,
+      });
     },
+
     openDrawer(mode) {
-      console.log(`${mode === "add" ? "Добавление" : "Редактирование"}`);
+      if (mode === "edit" && this.selectedUser) {
+        this.form = { ...this.selectedUser };
+      } else {
+        this.resetForm();
+      }
       this.actionsDrawer = true;
     },
+    onSelectUser(user) {
+      this.setSelectedUser(user);
+    },
+
     deleteSelected() {
       console.log("Удаление выбранных записей");
     },
+
+    cleanForm() {
+      const result = {};
+      Object.entries(this.form).forEach(([key, value]) => {
+        if (value) result[key] = value;
+      });
+      return result;
+    },
+  },
+
+  watch: {
+    page() {
+      this.refreshData();
+    },
+    selectedStatus() {
+      this.refreshData();
+    },
+    itemsPerPage() {
+      this.refreshData();
+    },
+    model() {
+      this.refreshData();
+    },
+  },
+
+  mounted() {
+    this.refreshData();
   },
 };
 </script>

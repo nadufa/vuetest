@@ -43,10 +43,32 @@
         :items="items"
         :items-per-page="localItemsPerPage"
         :page="localPage"
-        class="elevation-1"
+        item-key="id"
+        class="elevation-1 custom-data-table"
         hide-default-footer
         @pagination="onPagination"
-      ></v-data-table>
+        @click:row="selectRow"
+        :item-class="getItemClass"
+      >
+        <template v-slot:body="{ items }">
+          <tbody>
+            <tr
+              v-for="item in items"
+              :key="item.id"
+              :class="{
+                'v-data-table__selected':
+                  selectedUser && item.id === selectedUser.id,
+                'selected-row': selectedUser && item.id === selectedUser.id,
+              }"
+              @click="selectRow(item)"
+            >
+              <td v-for="header in headers" :key="header.value">
+                {{ item[header.value] }}
+              </td>
+            </tr>
+          </tbody>
+        </template>
+      </v-data-table>
 
       <v-row class="mt-4" align="center" justify="space-between">
         <v-col cols="12" md="6">
@@ -85,6 +107,7 @@ export default {
     page: Number,
     pageCount: Number,
     drawerOpen: Boolean,
+    selectedUser: Object,
   },
   data() {
     return {
@@ -128,6 +151,22 @@ export default {
         this.updatePage(pagination.page);
       }
     },
+    selectRow(item) {
+      this.$emit("select-user", item);
+    },
+    getItemClass(item) {
+      console.table(item.id, this.selectedUser?.id);
+
+      return this.selectedUser && item.id === this.selectedUser.id
+        ? "selected-row"
+        : "";
+    },
   },
 };
 </script>
+
+<style scoped>
+.selected-row {
+  background-color: #e0e0e0 !important;
+}
+</style>
